@@ -1,0 +1,12 @@
+# Ignore swap files (commonly created by Vim)
+*.swp
+
+# Some ycm stuff
+*.ycm_extra_conf.py
+
+# For the most part, everything else is ignored on a per-directory basis
+
+# oops but not build
+build/
+# and compile_commands... hmm
+compile_commands.json
