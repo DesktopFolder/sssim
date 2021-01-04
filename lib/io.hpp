@@ -28,6 +28,8 @@ std::ostream& operator<<(std::ostream& os, const Result<V, E> err)
     return os;
 }
 */
+
+sssim::Result<std::string> readFile(std::string path);
 }  // namespace sssim
 
 #endif  // SSSIM_IO_HPP

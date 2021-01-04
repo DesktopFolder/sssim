@@ -5,7 +5,7 @@
 #include <string>
 // #include <format> // Doesn't exist yet. Fun.
 
-sssim::Result<std::string> readFile(std::string path)
+sssim::Result<std::string> sssim::readFile(std::string path)
 {
     std::ifstream fs;
     fs.open(path, std::ifstream::in);

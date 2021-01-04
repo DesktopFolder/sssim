@@ -23,6 +23,7 @@ link_directories(${GLFW_LIBRARY_DIRS})
 add_executable(SSSim
     3rd/glad/glad.c # oh yeah glad
     src/shape.cpp
+    src/shaders.cpp
     src/window.cpp
     src/main.cpp
 )
