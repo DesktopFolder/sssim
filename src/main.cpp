@@ -1,7 +1,8 @@
 #include "io.hpp"
+#include "shaders.hpp"
 #include "shape.hpp"
 #include "window.hpp"
-#include "shaders.hpp"
+#include "graphics.hpp"
 
 int main()
 {
@@ -9,9 +10,14 @@ int main()
     Window window;
     if (!window.init(Window::Options()).ok()) return -1;
     window.setColour(0.2f, 0.3f, 0.3f, 1.0f);
-    int shader = -1;
-    loadShader("basic.vert").match(&shader, [](std::string err) { sssim::log(err); });
-    if (shader == -1) return -1;
+    auto shader_program = createShaderProgram({"basic.vert", "basic.frag"});
+    if (const auto err_ = shader_program.err(); err_) {
+        log(*err_);
+        return -1;
+    }
+    glUseProgram(*shader_program.ok());
+
+    sssim::log("SSSim: Starting main render loop.");
     do
     {
         window.clear();

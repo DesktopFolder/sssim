@@ -16,6 +16,9 @@ include_directories("${PROJECT_SOURCE_DIR}/lib")
 # Now we get glfw library. Hoorah.
 link_directories(${GLFW_LIBRARY_DIRS})
 
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+set (CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+
 # Every single file goes here.
 # What could go wrong?
 # Use target_sources in conjunction with add_subdirectory

@@ -1,14 +1,24 @@
 #ifndef SSSIM_SHADERS_HPP
 #define SSSIM_SHADERS_HPP
 
-#include "io.hpp"
+#include "log.hpp"
+#include "result.hpp"
 
-namespace sssim {
-    inline std::string shaderPath(std::string shader) {
-        return "../shaders/" + shader;
-    }
+#include <vector>
 
-    sssim::Result<int> loadShader(std::string name);
-}
+namespace sssim
+{
+inline std::string shaderPath(std::string shader) { return "../shaders/" + shader; }
 
-#endif // SSSIM_SHADERS_HPP
+/**
+ * Takes the shader filename as input.
+ *
+ * Automatically detects the type of shader based on extension.
+ */
+sssim::Result<int> loadShader(std::string name);
+
+sssim::Result<unsigned int> linkProgram(const std::vector<int>& shaders);
+sssim::Result<unsigned int> createShaderProgram(const std::vector<std::string>& shaders);
+}  // namespace sssim
+
+#endif  // SSSIM_SHADERS_HPP

@@ -4,12 +4,14 @@
 #include <optional>
 #include <string>
 
+#include "log.hpp"
+
 namespace sssim
 {
 template <typename T>
-static constexpr bool IsRef = false;
+static constexpr bool IsPtr = false;
 template <typename T>
-static constexpr bool IsRef<T*> = true;
+static constexpr bool IsPtr<T*> = true;
 
 /**
  * Lightly styled after Rust's Result<...> struct.
@@ -35,17 +37,24 @@ class Result
 {
     // Internal constructors
     template <typename T>
-    Result(std::true_type state, T value)
+    explicit Result(std::true_type state, const T& value) : value_(value), state_(true)
     {
-        value_ = value;
-        state_ = true;
     }
 
     template <typename T>
-    Result(std::false_type state, T value)
+    explicit Result(std::false_type state, const T& error) : error_(error), state_(false)
     {
-        error_ = value;
-        state_ = false;
+    }
+
+    // Internal constructors
+    template <typename T>
+    explicit Result(std::true_type state, T&& value) : value_(value), state_(true)
+    {
+    }
+
+    template <typename T>
+    explicit Result(std::false_type state, T&& error) : error_(error), state_(false)
+    {
     }
 
 public:
@@ -54,25 +63,77 @@ public:
     using error_type = E;
 
     // Constructors
-    static constexpr Result<V, E> Ok(V value) { return Result<V, E>(std::true_type{}, value); }
+    static constexpr Result<V, E> Ok(const V& value)
+    {
+        return Result<V, E>(std::true_type{}, value);
+    }
+    static constexpr Result<V, E> Ok(V&& value) { return Result<V, E>(std::true_type{}, value); }
 
-    static constexpr Result<V, E> Err(E error) { return Result<V, E>(std::false_type{}, error); }
+    static constexpr Result<V, E> Err(const E& error)
+    {
+        return Result<V, E>(std::false_type{}, error);
+    }
+    static constexpr Result<V, E> Err(E&& error) { return Result<V, E>(std::false_type{}, error); }
+
+    // Necessary - Prevents issues with destructor
+    Result(const Result& other)
+    {
+        // Yeah, this is starting to get extremely cursed
+        // Like, way more than before even. Unexpected! :)
+        if (other.state_)
+        {
+            new (&value_) std::string{other.value_};
+        }
+        else
+        {
+            new (&error_) std::string{other.error_};
+        }
+        state_ = other.state_;
+    }
+
+    Result(Result&& other)
+    {
+        if (other.state_)
+        {
+            new (&value_) std::string{std::move(other.value_)};
+        }
+        else
+        {
+            new (&error_) std::string{std::move(other.error_)};
+        }
+        state_ = other.state_;
+    }
+
+    Result& operator=(const Result&) = delete;
+    Result& operator=(Result&&) = delete;
+    Result()                    = delete;
 
     // Destructor - Necessary for nontrivial cleanup
     ~Result()
     {
         if (state_)
+        {
             value_.~V();
+        }
         else
+        {
             error_.~E();
+        }
     }
 
     // Member functions
-    operator bool() { return state_; }
+    [[nodiscard]] operator bool() const { return state_; }
 
+    std::optional<V> match() const {
+        // Simple convenience function.
+        if (state_) return value_;
+        else ::sssim::log(error_);
+        return {};
+    }
+    
     // Honestly, this will probably be clunky to use in C++.
     // Oh well. It's so functional though! Ha.
-    template <typename F1, typename F2, std::enable_if_t<!IsRef<F1>, int> = 0>
+    template <typename F1, typename F2, std::enable_if_t<!IsPtr<F1>, int> = 0>
     void match(F1&& with_value, F2&& with_error)
     {
         if (state_)
@@ -85,7 +146,7 @@ public:
         }
     }
 
-    template <typename F1, typename F2, std::enable_if_t<IsRef<F1>, int> = 0>
+    template <typename F1, typename F2, std::enable_if_t<IsPtr<F1>, int> = 0>
     void match(F1 with_value, F2&& with_error)
     {
         if (state_)
@@ -98,7 +159,7 @@ public:
         }
     }
 
-    std::optional<V> ok()
+    std::optional<V> ok() const
     {
         // See, this is just much easier than using match.
         // It's hard to think of how to implement a nice
@@ -109,7 +170,7 @@ public:
             return {};
     }
 
-    std::optional<std::string> err()
+    std::optional<std::string> err() const
     {
         if (!state_) return error_;
         return {};
@@ -182,6 +243,13 @@ public:
     {
         if (!state_) return error_;
         return {};
+    }
+
+    bool match() {
+        // Simple convenience function.
+        if (state_) return true;
+        else ::sssim::log(error_);
+        return false;
     }
 
 private:
